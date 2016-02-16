@@ -1,0 +1,21 @@
+while excess(u) > 0 do
+	e_temp = excess(u)
+	v_temp = null 
+	
+
+	h_temp = INF
+	
+	for each (u, v) ∈ Ef 
+		if height(v) < h_temp [height(v_temp)], then
+			v_temp = v
+			h_temp = height(v)
+	end for 
+	
+	if height(u) > h_temp, then  
+		d = min(e_temp , cf(u, v_temp))
+		cf(u,v_temp)−=d 
+		cf(v_temp,u)+=d 
+		excess(u)−=d
+		excess(v_temp) += d
+	else
+		height(u) = h_temp + 1
