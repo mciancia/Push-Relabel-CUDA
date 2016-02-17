@@ -21,6 +21,8 @@ using namespace std;
 
 #define GID(x, y) ( ((y)*N) + (x))
 
+// #define DEBUG
+
 int pushrelabel(int N, int s_x, int s_y, int t_x, int t_y, int* capacity){
 	cuInit(0);
     CUdevice cuDevice;
@@ -124,14 +126,18 @@ int pushrelabel(int N, int s_x, int s_y, int t_x, int t_y, int* capacity){
     
     void* args[] = {&capacityGPU, &excessGPU, &heightGPU, &N, &s_x, &s_y, &t_x, &t_y, &changedGPU, &mapGPU};
     int counter = 0;
-    while(changed && counter<= 150){
+    while(changed && counter<= 13){
+        // counter++;
         cuCtxSynchronize();
     	changed = 0;
-    	res = cuLaunchKernel(pushrelabelGPU, N/BLOCK_DIM_X, N/BLOCK_DIM_Y, 1, BLOCK_DIM_X, BLOCK_DIM_Y, 1, 0, 0, args, 0);
+        res = cuMemcpyHtoD(changedGPU, (void*)&changed, sizeof(int));
+    	cuCtxSynchronize();
+        res = cuLaunchKernel(pushrelabelGPU, N/BLOCK_DIM_X, N/BLOCK_DIM_Y, 1, BLOCK_DIM_X, BLOCK_DIM_Y, 1, 0, 0, args, 0);
     	cuCtxSynchronize();
     	res = cuMemcpyDtoH( (void*)&changed, changedGPU, sizeof(int));  
         
-        /*DEBUG*/ 	
+        /*DEBUG*/
+        #ifdef DEBUG 	
         res = cuMemcpyDtoH( (void*) map, mapGPU, N*N*sizeof(int));  
         printf("%d %d\n", s_x, s_y);
         cout << "Kernel iteration: " << counter++ << endl;
@@ -146,6 +152,13 @@ int pushrelabel(int N, int s_x, int s_y, int t_x, int t_y, int* capacity){
             }
             printf("\n");
         }
+        #endif
 	}
-    return 0; 
+    cuCtxSynchronize();
+    res = cuMemcpyDtoH( (void*) excess, excessGPU, N*N*sizeof(int));
+    cuCtxSynchronize();
+
+    int result = excess[GID(t_x, t_y)];
+
+    return result; 
 }
